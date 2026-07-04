@@ -1,0 +1,18 @@
+# Build
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
