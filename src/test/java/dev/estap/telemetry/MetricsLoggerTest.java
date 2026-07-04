@@ -23,4 +23,22 @@ class MetricsLoggerTest {
 
         assertThatCode(() -> logger.log(metrics)).doesNotThrowAnyException();
     }
+
+    @Test
+    void shouldLogCompressionMetricsWithoutThrowingException() {
+        MetricsLogger logger = new MetricsLogger();
+        CompressionMetrics metrics = new CompressionMetrics(
+            "test-id",
+            true,
+            false,
+            dev.estap.circuitbreaker.FailOpenCircuitBreaker.FailOpenReason.NONE,
+            1000,
+            600,
+            40.0,
+            250,
+            2
+        );
+
+        assertThatCode(() -> logger.log(metrics)).doesNotThrowAnyException();
+    }
 }

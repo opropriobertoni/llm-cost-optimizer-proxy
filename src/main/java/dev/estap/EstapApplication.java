@@ -1,6 +1,13 @@
 package dev.estap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.estap.circuitbreaker.FailOpenCircuitBreaker;
+import dev.estap.compression.CodeBlockExtractor;
+import dev.estap.compression.CompressionOrchestrator;
+import dev.estap.compression.GroqCompressor;
+import dev.estap.compression.SanityCheck;
 import dev.estap.config.EnvironmentConfig;
+import dev.estap.proxy.PromptExtractor;
 import dev.estap.proxy.ProxyController;
 import dev.estap.proxy.StreamingRelay;
 import dev.estap.telemetry.MetricsLogger;
@@ -32,9 +39,24 @@ public class EstapApplication {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
+        ObjectMapper objectMapper = new ObjectMapper();
+        PromptExtractor promptExtractor = new PromptExtractor(objectMapper);
+        CodeBlockExtractor codeBlockExtractor = new CodeBlockExtractor();
+        GroqCompressor groqCompressor = new GroqCompressor(config, httpClient, objectMapper);
+        SanityCheck sanityCheck = new SanityCheck();
+        FailOpenCircuitBreaker circuitBreaker = new FailOpenCircuitBreaker();
+        CompressionOrchestrator orchestrator = new CompressionOrchestrator(
+            promptExtractor,
+            codeBlockExtractor,
+            groqCompressor,
+            sanityCheck,
+            circuitBreaker,
+            objectMapper
+        );
+
         StreamingRelay relay = new StreamingRelay(httpClient);
         MetricsLogger metricsLogger = new MetricsLogger();
-        ProxyController proxyController = new ProxyController(config, relay, metricsLogger);
+        ProxyController proxyController = new ProxyController(config, relay, metricsLogger, orchestrator);
 
         Javalin app = Javalin.create();
 

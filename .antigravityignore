@@ -1,0 +1,9 @@
+# Preservação de Janela de Contexto do Agente Antigravity
+
+# Ignorar o executável do Wrapper e o JAR binário do Gradle
+gradle/wrapper/gradle-wrapper.jar
+gradlew
+gradlew.bat
+
+# Ignorar cache do Gradle
+.gradle/

@@ -31,6 +31,11 @@ class EnvironmentConfigTest {
             UPSTREAM_BASE_URL=https://api.test.com
             UPSTREAM_API_KEY=test-key-123
             ESTAP_DEV_MODE=true
+            GROQ_API_KEY=groq-key-456
+            GROQ_MODEL=llama3-70b
+            GROQ_API_URL=https://api.groq.com
+            GROQ_TIMEOUT_MS=600
+            ESTAP_DRY_RUN=true
             """;
         Files.writeString(tempEnvFile, envContent);
 
@@ -40,6 +45,11 @@ class EnvironmentConfigTest {
         assertThat(config.upstreamBaseUrl()).isEqualTo("https://api.test.com");
         assertThat(config.upstreamApiKey()).isEqualTo("test-key-123");
         assertThat(config.devMode()).isTrue();
+        assertThat(config.groqApiKey()).isEqualTo("groq-key-456");
+        assertThat(config.groqModel()).isEqualTo("llama3-70b");
+        assertThat(config.groqApiUrl()).isEqualTo("https://api.groq.com");
+        assertThat(config.groqTimeoutMs()).isEqualTo(600);
+        assertThat(config.dryRun()).isTrue();
     }
 
     @Test
@@ -61,6 +71,10 @@ class EnvironmentConfigTest {
             ESTAP_PORT=not-a-number
             UPSTREAM_BASE_URL=https://api.test.com
             UPSTREAM_API_KEY=test-key-123
+            GROQ_API_KEY=groq-key-456
+            GROQ_MODEL=llama3-70b
+            GROQ_API_URL=https://api.groq.com
+            GROQ_TIMEOUT_MS=600
             """;
         Files.writeString(tempEnvFile, envContent);
 

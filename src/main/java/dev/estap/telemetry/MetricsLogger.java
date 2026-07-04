@@ -26,4 +26,16 @@ public class MetricsLogger {
             METRICS_LOG.error("Failed to serialize request metrics", exception);
         }
     }
+
+    public void log(CompressionMetrics metrics) {
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.valueToTree(metrics);
+            if (node instanceof com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
+                objectNode.put("type", "COMPRESSION");
+            }
+            METRICS_LOG.info(objectMapper.writeValueAsString(node));
+        } catch (JsonProcessingException exception) {
+            METRICS_LOG.error("Failed to serialize compression metrics", exception);
+        }
+    }
 }

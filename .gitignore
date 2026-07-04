@@ -1,6 +1,7 @@
 # Build
 build/
 .gradle/
+out/
 
 # IDE
 .idea/
@@ -11,8 +12,11 @@ build/
 .classpath
 
 # Environment
-.env
+.env*
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs & Crash Dumps
+*.log

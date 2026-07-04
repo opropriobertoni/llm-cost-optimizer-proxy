@@ -6,7 +6,12 @@ public record EnvironmentConfig(
     int port,
     String upstreamBaseUrl,
     String upstreamApiKey,
-    boolean devMode
+    boolean devMode,
+    String groqApiKey,
+    String groqModel,
+    String groqApiUrl,
+    int groqTimeoutMs,
+    boolean dryRun
 ) {
 
     public static EnvironmentConfig load() {
@@ -18,7 +23,12 @@ public record EnvironmentConfig(
             parseRequiredInt(dotenv, "ESTAP_PORT"),
             requireNonEmpty(dotenv, "UPSTREAM_BASE_URL"),
             requireNonEmpty(dotenv, "UPSTREAM_API_KEY"),
-            Boolean.parseBoolean(dotenv.get("ESTAP_DEV_MODE", "false"))
+            Boolean.parseBoolean(dotenv.get("ESTAP_DEV_MODE", "false")),
+            requireNonEmpty(dotenv, "GROQ_API_KEY"),
+            requireNonEmpty(dotenv, "GROQ_MODEL"),
+            requireNonEmpty(dotenv, "GROQ_API_URL"),
+            parseRequiredInt(dotenv, "GROQ_TIMEOUT_MS"),
+            Boolean.parseBoolean(dotenv.get("ESTAP_DRY_RUN", "false"))
         );
     }
 

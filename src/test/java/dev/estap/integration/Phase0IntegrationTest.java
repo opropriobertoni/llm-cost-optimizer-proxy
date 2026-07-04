@@ -50,7 +50,12 @@ class Phase0IntegrationTest {
             0,
             "http://localhost:" + wireMockServer.port(),
             "test-upstream-api-key",
-            true
+            true,
+            "test-groq-key",
+            "llama3-70b",
+            "http://localhost:" + wireMockServer.port() + "/groq",
+            600,
+            false
         );
 
         app = new EstapApplication(config);

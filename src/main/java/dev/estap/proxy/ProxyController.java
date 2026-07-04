@@ -2,6 +2,7 @@ package dev.estap.proxy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.estap.compression.CompressionOrchestrator;
 import dev.estap.config.EnvironmentConfig;
 import dev.estap.telemetry.MetricsLogger;
 import dev.estap.telemetry.RequestMetrics;
@@ -31,15 +32,18 @@ public class ProxyController {
     private final EnvironmentConfig config;
     private final StreamingRelay relay;
     private final MetricsLogger metricsLogger;
+    private final CompressionOrchestrator orchestrator;
     private final ObjectMapper objectMapper;
 
     public ProxyController(
             EnvironmentConfig config,
             StreamingRelay relay,
-            MetricsLogger metricsLogger) {
+            MetricsLogger metricsLogger,
+            CompressionOrchestrator orchestrator) {
         this.config = config;
         this.relay = relay;
         this.metricsLogger = metricsLogger;
+        this.orchestrator = orchestrator;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -48,13 +52,40 @@ public class ProxyController {
         Instant requestStart = Instant.now();
         byte[] requestBody = ctx.bodyAsBytes();
 
+        // Executa o motor de compressão na borda
+        CompressionOrchestrator.CompressionOutcome outcome = orchestrator.orchestrate(requestBody);
+
+        if (config.dryRun()) {
+            LOG.info("[ESTAP:DRY_RUN] Request path: {}\nOriginal payload size: {} B\nCompressed payload size: {} B\nCompression ratio: {}%\nGroq latency: {} ms\nCode blocks count: {}\nCompression applied: {}\nFail-open triggered: {} (Reason: {})",
+                ctx.path(), outcome.originalSizeBytes(), outcome.compressedSizeBytes(),
+                String.format("%.2f", outcome.compressionRatio()), outcome.groqLatencyMs(),
+                outcome.codeBlocksCount(), outcome.compressionApplied(), outcome.failOpenTriggered(),
+                outcome.failOpenReason());
+
+            ctx.status(200);
+            ctx.json(Map.of(
+                "dryRun", true,
+                "compressionApplied", outcome.compressionApplied(),
+                "failOpenTriggered", outcome.failOpenTriggered(),
+                "failOpenReason", outcome.failOpenReason().name(),
+                "originalSizeBytes", outcome.originalSizeBytes(),
+                "compressedSizeBytes", outcome.compressedSizeBytes(),
+                "compressionRatio", outcome.compressionRatio(),
+                "groqLatencyMs", outcome.groqLatencyMs(),
+                "codeBlocksCount", outcome.codeBlocksCount()
+            ));
+            return;
+        }
+
+        byte[] payloadToSend = outcome.compressionApplied() ? outcome.finalPayloadBody() : requestBody;
+
         try {
             if (config.devMode()) {
-                analyzePayload(requestBody);
+                analyzePayload(payloadToSend);
             }
 
-            HttpRequest upstreamRequest = buildUpstreamRequest(ctx, requestBody);
-            boolean streaming = isStreamingRequest(ctx, requestBody);
+            HttpRequest upstreamRequest = buildUpstreamRequest(ctx, payloadToSend);
+            boolean streaming = isStreamingRequest(ctx, payloadToSend);
 
             Instant upstreamStart = Instant.now();
             long responseBytes;
@@ -80,7 +111,8 @@ public class ProxyController {
                 responseBytes = result.body().length;
             }
 
-            logMetrics(requestId, requestStart, upstreamStart, ctx, requestBody.length, responseBytes, statusCode);
+            logMetrics(requestId, requestStart, upstreamStart, ctx, payloadToSend.length, responseBytes, statusCode);
+            logCompressionMetrics(requestId, outcome);
 
         } catch (IOException | InterruptedException exception) {
             if (exception instanceof InterruptedException) {
@@ -95,8 +127,23 @@ public class ProxyController {
                 "requestId", requestId
             ));
 
-            logMetrics(requestId, requestStart, requestStart, ctx, requestBody.length, 0, 502);
+            logMetrics(requestId, requestStart, requestStart, ctx, payloadToSend.length, 0, 502);
+            logCompressionMetrics(requestId, outcome);
         }
+    }
+
+    private void logCompressionMetrics(String requestId, CompressionOrchestrator.CompressionOutcome outcome) {
+        metricsLogger.log(new dev.estap.telemetry.CompressionMetrics(
+            requestId,
+            outcome.compressionApplied(),
+            outcome.failOpenTriggered(),
+            outcome.failOpenReason(),
+            outcome.originalSizeBytes(),
+            outcome.compressedSizeBytes(),
+            outcome.compressionRatio(),
+            outcome.groqLatencyMs(),
+            outcome.codeBlocksCount()
+        ));
     }
 
     private HttpRequest buildUpstreamRequest(Context ctx, byte[] body) {
