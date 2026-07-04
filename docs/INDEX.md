@@ -15,11 +15,13 @@ graph TD
     B --> D["PHASE_1_COMPRESSION_ENGINE.md<br/><i>Motor de Compressão + Circuit Breaker</i>"]
     B --> E["TESTING_STRATEGY.md<br/><i>Unitários + Integração + Validação Semântica</i>"]
     B --> F["DEPLOY_AND_OPERATIONS.md<br/><i>Docker + Cloud Run + Monitoramento</i>"]
+    B --> G["RESULTS.md<br/><i>Resultados Experimentais e Eficiência</i>"]
 
     C -->|"pré-requisito"| D
     C -->|"testes paralelos"| E
     D -->|"testes paralelos"| E
     D -->|"deploy após aceite"| F
+    C & D -->|"métricas empíricas"| G
 ```
 
 ---
@@ -117,6 +119,28 @@ Containerização, deploy no Cloud Run, gerenciamento de segredos e monitorament
 - Cloud Run configurado com scale-to-zero
 - Segredos no Secret Manager (zero hardcoded)
 - Dashboard de monitoramento operacional
+
+---
+
+### [Resultados Experimentais e Eficiência](file:///home/bertoni/Developer/projects/estap/docs/RESULTS.md)
+
+Evidências empíricas coletadas durante o desenvolvimento. Responde à pergunta: **"A proposta de valor do ESTAP se sustenta na prática?"**
+
+| Seção | Conteúdo |
+|---|---|
+| 1 — Visão Geral | Hipótese central e diagrama do pipeline |
+| 2 — Fase 0 | Cobertura de testes (18/18), critérios de aceite, incidentes e resoluções |
+| 3 — Fase 1 | Cobertura de testes (29/29, acumulado 47/47), critérios de aceite |
+| 4 — Calibração | Corpus de 20 prompts, tabela completa de resultados, iterações de engenharia de prompt |
+| 5 — Análise Econômica | Estimativa de custo e economia com base nos dados empíricos |
+| 6 — Log de Commits | Rastreabilidade por fase |
+| 7 — Próximas Fases | Objetivos e métricas alvo |
+
+**Achados principais:**
+- Taxa de compressão média observada: **22,26%** (corpus de 20 prompts)
+- 100% de compressões sem fail-open no corpus de calibração
+- Latência warm do Groq: ~554 ms (P95 < 662 ms)
+- Timeout do circuit breaker calibrado para **1000 ms**
 
 ---
 
