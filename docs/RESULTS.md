@@ -132,6 +132,7 @@ Ativar a inteligência de borda: comprimir semânticamente os prompts em Portugu
 
 | # | Critério | Resultado |
 |---|---|---|
+| 1.12.1 | `PromptExtractor` localiza e extrai o prompt do usuário do payload JSON | ✅ |
 | 1.12.2 | `CodeBlockExtractor` preserva blocos de código intactos com placeholders | ✅ |
 | 1.12.3 | `GroqCompressor` realiza chamada à API Groq e retorna resposta comprimida | ✅ |
 | 1.12.4 | `SanityCheck` rejeita respostas que expandem o prompt | ✅ |

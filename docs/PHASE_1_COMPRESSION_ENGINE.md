@@ -19,8 +19,8 @@ GROQ_MODEL=llama3-70b-8192
 GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
 
 # Timeout do Circuit Breaker (em ms).
-# Valor final = 800ms - overhead estimado de rede (validado empiricamente na Fase 0).
-GROQ_TIMEOUT_MS=600
+# Calibrado empiricamente para 1000ms para acomodar TLS handshake e jitter de rede.
+GROQ_TIMEOUT_MS=1000
 
 # Modo dry-run: imprime antes/depois sem enviar para a nuvem
 ESTAP_DRY_RUN=false
@@ -255,11 +255,9 @@ Responsabilidade: encapsular a chamada ao Groq com proteção de timeout. Em cas
 └─────────────────────────────────┘
 ```
 
-**Cálculo do Timeout:**
+Conforme calibrado empiricamente: `GROQ_TIMEOUT_MS = 1000`.
 
-Conforme ESTAP.md: `timeout = 800ms - overhead_estimado_de_rede`.
-
-O overhead de rede é a variável empírica medida na Fase 0 (telemetria de latência do proxy). Exemplo: se o proxy adiciona ~50ms de overhead, `GROQ_TIMEOUT_MS = 750`.
+O timeout foi fixado em 1000ms para evitar que o circuit breaker desarme em requisições legítimas devido a flutuações temporárias de rede. Reconhece-se que no pior caso de timeout, o atraso ultrapassará o objetivo de overhead de 800ms das requisições normais (warm), mas garante a entrega segura do prompt original.
 
 ---
 
