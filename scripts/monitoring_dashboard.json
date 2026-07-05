@@ -1,0 +1,80 @@
+{
+  "displayName": "ESTAP — Operational Dashboard",
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "title": "Request Count (Cloud Run)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"estap\" AND metric.type=\"run.googleapis.com/request_count\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ]
+        }
+      },
+      {
+        "title": "Latency P95 (Cloud Run)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"estap\" AND metric.type=\"run.googleapis.com/request_latencies\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ]
+        }
+      },
+      {
+        "title": "Fail-Open Count (Log-Based)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/estap_fail_open_count\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ]
+        }
+      },
+      {
+        "title": "Successful Compressions (Log-Based)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/estap_compression_applied_count\"",
+                  "aggregation": {
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
+                }
+              },
+              "plotType": "LINE"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
