@@ -25,8 +25,9 @@ class SanityCheckTest {
         );
 
         assertThat(result.passed()).isTrue();
-        assertThat(result.originalSizeBytes()).isEqualTo(41);
-        assertThat(result.compressedSizeBytes()).isEqualTo(35);
+        assertThat(result.originalTokens()).isGreaterThan(0);
+        assertThat(result.compressedTokens()).isGreaterThan(0);
+        assertThat(result.compressedTokens()).isLessThan(result.originalTokens());
         assertThat(result.compressionRatio()).isGreaterThan(0.0);
     }
 
@@ -47,7 +48,7 @@ class SanityCheckTest {
         );
 
         assertThat(result.passed()).isFalse();
-        assertThat(result.reason()).contains("maior ou igual ao original");
+        assertThat(result.reason()).contains("tokens >= original");
     }
 
     @Test

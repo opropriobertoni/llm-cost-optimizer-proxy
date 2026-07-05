@@ -7,9 +7,12 @@ public record CompressionMetrics(
     boolean compressionApplied,
     boolean failOpenTriggered,
     FailOpenCircuitBreaker.FailOpenReason failOpenReason,
-    long originalSizeBytes,
-    long compressedSizeBytes,
+    long originalTokens,
+    long compressedTokens,
     double compressionRatio,
     long groqLatencyMs,
-    int codeBlocksCount
+    int codeBlocksCount,
+    long proseOriginalTokens,
+    long proseCompressedTokens,
+    double proseCompressionRatio
 ) {}

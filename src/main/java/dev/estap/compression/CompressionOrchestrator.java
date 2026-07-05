@@ -1,7 +1,6 @@
 package dev.estap.compression;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.estap.circuitbreaker.FailOpenCircuitBreaker;
 import dev.estap.proxy.PromptExtractor;
@@ -20,21 +19,18 @@ public class CompressionOrchestrator {
     private final GroqCompressor groqCompressor;
     private final SanityCheck sanityCheck;
     private final FailOpenCircuitBreaker circuitBreaker;
-    private final ObjectMapper objectMapper;
 
     public CompressionOrchestrator(
             PromptExtractor promptExtractor,
             CodeBlockExtractor codeBlockExtractor,
             GroqCompressor groqCompressor,
             SanityCheck sanityCheck,
-            FailOpenCircuitBreaker circuitBreaker,
-            ObjectMapper objectMapper) {
+            FailOpenCircuitBreaker circuitBreaker) {
         this.promptExtractor = promptExtractor;
         this.codeBlockExtractor = codeBlockExtractor;
         this.groqCompressor = groqCompressor;
         this.sanityCheck = sanityCheck;
         this.circuitBreaker = circuitBreaker;
-        this.objectMapper = objectMapper;
     }
 
     public CompressionOutcome orchestrate(byte[] originalPayloadBytes) {
@@ -47,7 +43,8 @@ public class CompressionOrchestrator {
                 false,
                 false,
                 FailOpenCircuitBreaker.FailOpenReason.NONE,
-                0, 0, 0.0, 0, 0
+                0, 0, 0.0, 0, 0,
+                0, 0, 0.0
             );
         }
 
@@ -58,9 +55,9 @@ public class CompressionOrchestrator {
         CodeBlockExtractor.ExtractionPair codeExtraction = codeBlockExtractor.extract(originalPrompt);
         String sanitizedPrompt = codeExtraction.sanitizedText();
 
-        LOG.debug("Original prompt size: {} bytes. Sanitized prompt size: {} bytes. Extracted blocks: {}",
-            originalPrompt.getBytes(StandardCharsets.UTF_8).length,
-            sanitizedPrompt.getBytes(StandardCharsets.UTF_8).length,
+        LOG.debug("Original prompt length: {} chars. Sanitized prompt length: {} chars. Extracted blocks: {}",
+            originalPrompt.length(),
+            sanitizedPrompt.length(),
             codeExtraction.extractedBlocks().size());
 
         // Executa compressão pelo Groq com proteção de Circuit Breaker
@@ -76,10 +73,10 @@ public class CompressionOrchestrator {
                 false,
                 true,
                 groqResult.reason(),
-                originalPrompt.getBytes(StandardCharsets.UTF_8).length,
-                0, 0.0,
+                0, 0, 0.0,
                 groqResult.latencyMs(),
-                codeExtraction.extractedBlocks().size()
+                codeExtraction.extractedBlocks().size(),
+                0, 0, 0.0
             );
         }
 
@@ -104,10 +101,11 @@ public class CompressionOrchestrator {
                 false,
                 true,
                 FailOpenCircuitBreaker.FailOpenReason.SANITY_CHECK_FAILED,
-                validation.originalSizeBytes(),
+                validation.originalTokens(),
                 0, 0.0,
                 groqResult.latencyMs(),
-                codeExtraction.extractedBlocks().size()
+                codeExtraction.extractedBlocks().size(),
+                0, 0, 0.0
             );
         }
 
@@ -115,8 +113,8 @@ public class CompressionOrchestrator {
         updatePayloadAtPath(extraction.originalPayload(), extraction.jsonPath(), recomposedPrompt);
         byte[] finalPayload = extraction.originalPayload().toString().getBytes(StandardCharsets.UTF_8);
 
-        LOG.info("Compression successful! Saved {} bytes ({}% reduction).",
-            validation.originalSizeBytes() - validation.compressedSizeBytes(),
+        LOG.info("Compression successful! Saved {} tokens ({}% reduction).",
+            validation.originalTokens() - validation.compressedTokens(),
             String.format("%.2f", validation.compressionRatio()));
 
         return new CompressionOutcome(
@@ -124,11 +122,14 @@ public class CompressionOrchestrator {
             true,
             false,
             FailOpenCircuitBreaker.FailOpenReason.NONE,
-            validation.originalSizeBytes(),
-            validation.compressedSizeBytes(),
+            validation.originalTokens(),
+            validation.compressedTokens(),
             validation.compressionRatio(),
             groqResult.latencyMs(),
-            codeExtraction.extractedBlocks().size()
+            codeExtraction.extractedBlocks().size(),
+            validation.proseOriginalTokens(),
+            validation.proseCompressedTokens(),
+            validation.proseCompressionRatio()
         );
     }
 
@@ -153,10 +154,13 @@ public class CompressionOrchestrator {
         boolean compressionApplied,
         boolean failOpenTriggered,
         FailOpenCircuitBreaker.FailOpenReason failOpenReason,
-        long originalSizeBytes,
-        long compressedSizeBytes,
+        long originalTokens,
+        long compressedTokens,
         double compressionRatio,
         long groqLatencyMs,
-        int codeBlocksCount
+        int codeBlocksCount,
+        long proseOriginalTokens,
+        long proseCompressedTokens,
+        double proseCompressionRatio
     ) {}
 }

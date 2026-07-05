@@ -56,23 +56,27 @@ public class ProxyController {
         CompressionOrchestrator.CompressionOutcome outcome = orchestrator.orchestrate(requestBody);
 
         if (config.dryRun()) {
-            LOG.info("[ESTAP:DRY_RUN] Request path: {}\nOriginal payload size: {} B\nCompressed payload size: {} B\nCompression ratio: {}%\nGroq latency: {} ms\nCode blocks count: {}\nCompression applied: {}\nFail-open triggered: {} (Reason: {})",
-                ctx.path(), outcome.originalSizeBytes(), outcome.compressedSizeBytes(),
-                String.format("%.2f", outcome.compressionRatio()), outcome.groqLatencyMs(),
-                outcome.codeBlocksCount(), outcome.compressionApplied(), outcome.failOpenTriggered(),
-                outcome.failOpenReason());
+            LOG.info("[ESTAP:DRY_RUN] Request path: {}\nOriginal tokens: {}\nCompressed tokens: {}\nCompression ratio: {}%\nProse original tokens: {}\nProse compressed tokens: {}\nProse compression ratio: {}%\nGroq latency: {} ms\nCode blocks count: {}\nCompression applied: {}\nFail-open triggered: {} (Reason: {})",
+                ctx.path(), outcome.originalTokens(), outcome.compressedTokens(),
+                String.format("%.2f", outcome.compressionRatio()), outcome.proseOriginalTokens(),
+                outcome.proseCompressedTokens(), String.format("%.2f", outcome.proseCompressionRatio()),
+                outcome.groqLatencyMs(), outcome.codeBlocksCount(), outcome.compressionApplied(),
+                outcome.failOpenTriggered(), outcome.failOpenReason());
 
             ctx.status(200);
-            ctx.json(Map.of(
-                "dryRun", true,
-                "compressionApplied", outcome.compressionApplied(),
-                "failOpenTriggered", outcome.failOpenTriggered(),
-                "failOpenReason", outcome.failOpenReason().name(),
-                "originalSizeBytes", outcome.originalSizeBytes(),
-                "compressedSizeBytes", outcome.compressedSizeBytes(),
-                "compressionRatio", outcome.compressionRatio(),
-                "groqLatencyMs", outcome.groqLatencyMs(),
-                "codeBlocksCount", outcome.codeBlocksCount()
+            ctx.json(Map.ofEntries(
+                Map.entry("dryRun", true),
+                Map.entry("compressionApplied", outcome.compressionApplied()),
+                Map.entry("failOpenTriggered", outcome.failOpenTriggered()),
+                Map.entry("failOpenReason", outcome.failOpenReason().name()),
+                Map.entry("originalTokens", outcome.originalTokens()),
+                Map.entry("compressedTokens", outcome.compressedTokens()),
+                Map.entry("compressionRatio", outcome.compressionRatio()),
+                Map.entry("proseOriginalTokens", outcome.proseOriginalTokens()),
+                Map.entry("proseCompressedTokens", outcome.proseCompressedTokens()),
+                Map.entry("proseCompressionRatio", outcome.proseCompressionRatio()),
+                Map.entry("groqLatencyMs", outcome.groqLatencyMs()),
+                Map.entry("codeBlocksCount", outcome.codeBlocksCount())
             ));
             return;
         }
@@ -138,11 +142,14 @@ public class ProxyController {
             outcome.compressionApplied(),
             outcome.failOpenTriggered(),
             outcome.failOpenReason(),
-            outcome.originalSizeBytes(),
-            outcome.compressedSizeBytes(),
+            outcome.originalTokens(),
+            outcome.compressedTokens(),
             outcome.compressionRatio(),
             outcome.groqLatencyMs(),
-            outcome.codeBlocksCount()
+            outcome.codeBlocksCount(),
+            outcome.proseOriginalTokens(),
+            outcome.proseCompressedTokens(),
+            outcome.proseCompressionRatio()
         ));
     }
 

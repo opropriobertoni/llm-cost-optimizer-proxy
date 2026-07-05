@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -277,8 +276,8 @@ class Phase1IntegrationTest {
             String body = response.body().string();
             assertThat(body).contains("dryRun");
             assertThat(body).contains("compressionApplied");
-            assertThat(body).contains("originalSizeBytes");
-            assertThat(body).contains("compressedSizeBytes");
+            assertThat(body).contains("originalTokens");
+            assertThat(body).contains("compressedTokens");
         }
 
         wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/chat/completions")));

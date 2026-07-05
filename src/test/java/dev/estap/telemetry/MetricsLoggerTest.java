@@ -36,7 +36,10 @@ class MetricsLoggerTest {
             600,
             40.0,
             250,
-            2
+            2,
+            800,
+            400,
+            50.0
         );
 
         assertThatCode(() -> logger.log(metrics)).doesNotThrowAnyException();

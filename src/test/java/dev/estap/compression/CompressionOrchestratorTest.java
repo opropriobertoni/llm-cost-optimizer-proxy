@@ -61,8 +61,7 @@ class CompressionOrchestratorTest {
             codeBlockExtractor,
             groqCompressor,
             sanityCheck,
-            circuitBreaker,
-            objectMapper
+            circuitBreaker
         );
     }
 

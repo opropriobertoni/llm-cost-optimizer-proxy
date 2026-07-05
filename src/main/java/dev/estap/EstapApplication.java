@@ -50,8 +50,7 @@ public class EstapApplication {
             codeBlockExtractor,
             groqCompressor,
             sanityCheck,
-            circuitBreaker,
-            objectMapper
+            circuitBreaker
         );
 
         StreamingRelay relay = new StreamingRelay(httpClient);
