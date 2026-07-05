@@ -4,6 +4,14 @@ Um proxy HTTP transparente que intercepta requisições de IDEs agênticas para 
 
 ---
 
+## Lições Aprendidas / Trade-offs
+
+*   **A Realidade Financeira:** A infraestrutura roda a custo zero no Cloud Run e Groq (Free Tiers), mas o ROI financeiro para um desenvolvedor solo é irrelevante (frações de centavos). O valor da solução se prova em escala corporativa ou volumes massivos de requisições.
+*   **A Troca de Latência:** O sistema troca ~554ms de tempo de rede por prompts mais limpos na nuvem principal.
+*   **A Importância da Telemetria:** Os testes de campo mostraram que os limites de requisição por minuto (TPM) do Groq gratuito são o principal ponto de falha, tornando o mecanismo de log segregado e o fail-open as partes mais importantes do código backend.
+
+---
+
 ## O Problema
 
 IDEs agênticas modernas (Antigravity, Cursor, Windsurf) enviam grandes volumes de tokens para APIs de modelos como Claude, GPT-4 e Gemini. Boa parte desses tokens são prompts conversacionais redigidos em linguagem natural — frequentemente em Português ou outro idioma que não o Inglês — que poderiam ser comprimidos semanticamente sem perda de contexto.
