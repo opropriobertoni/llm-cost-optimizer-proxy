@@ -18,5 +18,8 @@ out/
 .DS_Store
 Thumbs.db
 
+# Local Tools
+.tools/
+
 # Logs & Crash Dumps
 *.log

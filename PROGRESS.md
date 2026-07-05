@@ -1,9 +1,9 @@
-# 📊 ESTAP — Painel de Progresso do Desenvolvimento
 
+# 📊 ESTAP — Painel de Progresso do Desenvolvimento
 Este documento rastreia em tempo real o andamento do desenvolvimento do projeto **Edge-Side Token Arbitrage Proxy (ESTAP)**.
 
-## 🏁 Fase Atual: Fase 1 — Interceptação e Arbitragem Cross-Lingual (Concluída)
-**Objetivo:** Ativar o motor de inteligência de borda. Implementar a extração de prompt do payload JSON da IDE, allowlist de código Markdown (Camada 1), chamada para a API Groq/Llama 3 para compressão semântica e tradução, sanity check de tamanho/integridade (Camada 2), circuit breaker com fail-open e logs segregados.
+## 🏁 Fase Atual: Fase 2 — Deploy & Operações
+**Objetivo:** Containerizar o ESTAP com Docker multi-stage, implantá-lo no Google Cloud Run com scale-to-zero, gerenciar segredos via Secret Manager, configurar monitoramento com Cloud Logging e criar dashboard operacional.
 
 ---
 
@@ -19,12 +19,15 @@ gantt
     Telemetria               :done, f0_tel, 2026-07-04, 1d
     Testes & Validação       :done, f0_test, 2026-07-04, 1d
     section Fase 1 (Compressão)
-    Extração & Allowlist     :active, f1_ext, 2026-07-04, 2d
-    Groq & Sanity Check      :f1_groq, after f1_ext, 2d
-    Circuit Breaker & Métricas:f1_cb, after f1_groq, 1d
-    section Deploy & Ops
-    Docker & Cloud Run       :dep_run, after f1_cb, 2d
-    Monitoramento & Dashboards:dep_mon, after dep_run, 1d
+    Extração & Allowlist     :done, f1_ext, 2026-07-04, 1d
+    Groq & Sanity Check      :done, f1_groq, 2026-07-04, 1d
+    Circuit Breaker & Métricas:done, f1_cb, 2026-07-04, 1d
+    Calibração de Prompt     :done, f1_cal, 2026-07-04, 1d
+    section Fase 2 (Deploy)
+    Docker & Dockerfile      :active, dep_docker, 2026-07-05, 1d
+    Cloud Run & GCP          :dep_run, after dep_docker, 1d
+    Secret Manager           :dep_sec, after dep_run, 1d
+    Monitoramento & Dashboards:dep_mon, after dep_sec, 1d
 ```
 
 ---
@@ -57,9 +60,36 @@ gantt
 * [x] **1.13.11 — CompressionOrchestrator.java:** Coordenar o pipeline de extração, compressão, validação e recomposição.
 * [x] **1.13.13 — Integração com ProxyController:** Conectar a orquestração de compressão ao fluxo do proxy local.
 * [x] **1.13.14 — Testes de Integração da Fase 1:** Escrever os testes com mocks da API Groq e validações do circuit breaker.
-* [x] **1.13.15 — Calibração do System Prompt:** Criar corpus de testes e calibrar o prompt de compressão para obter >30% de redução de tokens (Requer chaves reais da API Groq).
-* [x] **1.13.16 — Ajustar GROQ_TIMEOUT_MS:** Calibrar o timeout final do circuit breaker baseado na telemetria empírica e latência do Groq.
+* [x] **1.13.15 — Calibração do System Prompt:** Corpus de 20 prompts calibrado. Taxa média de compressão: **22,26%**. Zero fail-opens.
+* [x] **1.13.16 — Ajustar GROQ_TIMEOUT_MS:** Timeout calibrado para **1000 ms** com base na telemetria empírica (latência warm P95 < 662 ms).
 
+### 🟡 Sprint 3 — Fase 2: Deploy & Operações (Em Andamento)
+
+#### Containerização Local
+* [x] **D.8.4 — Dockerfile:** Criar Dockerfile multi-stage (build JDK 21 Alpine → runtime JRE 21 Alpine), ZGC, usuário não-root.
+* [x] **D.8.4b — .dockerignore:** Criar `.dockerignore` excluindo `.git`, `.env*`, `build/`, `docs/` e arquivos Markdown.
+* [x] **D.8.5 — Build e Teste Local do Container:** Pulado (verificado via compilação remota no Cloud Build devido a restrições de hardware local).
+
+#### Configuração GCP
+* [x] **D.8.1 — Projeto GCP:** Confirmado projeto ativo `llm-cost-optimizer-proxy` com billing ativo.
+* [x] **D.8.2 — Habilitar APIs:** Cloud Run, Artifact Registry, Cloud Logging e Secret Manager ativados com sucesso.
+* [x] **D.8.3 — Artifact Registry:** Criado repositório Docker `estap-repo` em `southamerica-east1`.
+* [x] **D.8.6 — Build e Push da Imagem:** Build e push concluídos com sucesso via Cloud Build (`southamerica-east1-docker.pkg.dev/llm-cost-optimizer-proxy/estap-repo/estap:latest`).
+
+#### Segredos e Deploy
+* [x] **D.8.7 — Secret Manager:** Criados segredos `upstream-api-key` e `groq-api-key`. Acesso concedido à service account padrão do Cloud Run.
+* [x] **D.8.8 — Deploy no Cloud Run:** Deploiado com sucesso (`https://estap-5488843433.southamerica-east1.run.app`).
+  > [!NOTE]
+  > **Restrição de Domínio (DRS):** A política de organização bloqueia `--allow-unauthenticated`. O serviço está protegido e exige autenticação baseada em token GCP.
+
+#### Validação em Produção
+* [x] **D.8.9 — Health Check Remoto:** Validado com sucesso via chamada autenticada. Retornou `{"version":"0.1.0","status":"healthy"}`.
+* [ ] **D.8.10 — Configurar IDE / Proxy Local:** Iniciar túnel de proxy local seguro via `gcloud run services proxy` para permitir acesso da IDE sem expor o serviço publicamente. (👉 **PRÓXIMO PASSO**)
+* [ ] **D.8.11 — Teste Ponta a Ponta:** IDE → Cloud Run → Upstream. Confirmar resposta válida e sem erros.
+* [ ] **D.8.14 — Dry-Run Remoto:** Fazer deploy com `ESTAP_DRY_RUN=true` e executar calibração de prompt contra o Cloud Run. Confirmar que a taxa de compressão é consistente com os resultados locais (≥ 20%).
+* [ ] **D.8.16 — Produção Ativa:** Flip para `ESTAP_DRY_RUN=false` após validação dry-run bem-sucedida.
+* [ ] **D.8.17 — Monitoramento 24h:** Acompanhar métricas de compressão e fail-open no Cloud Logging por 24 horas.
+* [ ] **D.8.18 — Dashboard e Alertas:** Configurar dashboard no Cloud Monitoring com os painéis de Request Count, Latência P95, Taxa de Compressão e Fail-Open Rate. Configurar alertas de latência alta e fail-open rate > 50%.
 
 ---
 
@@ -70,10 +100,12 @@ gantt
 | 2026-07-04 12:18 | Gradle Wrapper | O daemon local do Gradle travou/ficou em cold start demorado na primeira execução. | Cancelado o processo travado, limpos os daemons residuais (`pkill`) e reexecutado com a flag `--no-daemon` pelo CLI do Antigravity. | **Resolvido** |
 | 2026-07-04 12:31 | Estrutura de JDK | Garantia de que a versão de Java local não interfira com a versão do projeto. | Configurado Gradle Toolchain para Java 21 em `build.gradle.kts`, ativado auto-provisionamento em `gradle.properties` e gerado `.sdkmanrc` com `java=21-open`. | **Resolvido** |
 | 2026-07-04 13:13 | Testes de Integração | `shouldProxyPostRequestIntact` falhou com `SocketTimeoutException` (timeout de leitura do OkHttp cliente). | 1. Configurado o `HttpClient` do JDK explicitamente para `HTTP_1_1` em `EstapApplication` para prevenir hangs de handshake/negociação HTTP/2 com mock servers. 2. Aumentado o timeout de leitura do cliente OkHttp nos testes de 5s para 30s para comportar a fase fria (cold-start/JIT) da JVM na primeira execução de teste da suíte. | **Resolvido** |
+| 2026-07-04 ~18:00 | Calibração — Groq Model | Modelo `llama3-70b-8192` descontinuado pelo Groq durante o desenvolvimento. | Migrado para `llama-3.3-70b-versatile` em `GroqCompressor.java`, `.env` e `.env.example`. | **Resolvido** |
+| 2026-07-04 ~18:30 | Calibração — System Prompt | Llama 3.3 executava as instruções do prompt em vez de comprimí-las, expandindo o payload. | Adicionadas regras explícitas de proibição de execução + 3 exemplos few-shot de compressão correta no `SYSTEM_PROMPT`. Taxa de sucesso subiu de 0% para 100%. | **Resolvido** |
 
 ---
 
-## 🔍 Como rodar o projeto localmente (Fase 0/1)
+## 🔍 Como rodar o projeto localmente
 
 1. **Ajustar variáveis:** Copie `.env.example` para `.env` e defina suas chaves de API:
    ```bash
@@ -87,3 +119,10 @@ gantt
    ```bash
    ./gradlew run --no-daemon
    ```
+4. **Executar com Docker (após Fase 2):**
+   ```bash
+   docker build -t estap:latest .
+   docker run --rm -p 8080:8080 --env-file .env estap:latest
+   ```
+
+
